@@ -1,10 +1,12 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 
 constexpr unsigned MAX_LEN = 64;//maximum number of chars on one line in the file
 unsigned usersLength, numberOfLevels;
 char** users;
 char*** levels;
+char username[MAX_LEN] = "", password[MAX_LEN] = "";
 
 char getCharFromDigit(int digit)
 {
@@ -89,6 +91,22 @@ unsigned myStrlen(const char* str)
         str++;
     }
     return result;
+}
+
+int myStrcmp(const char* first, const char* second)
+{
+    if (!first || !second)
+        return 0; //some error value
+
+    //we skip the common prefix, but not the terminating zero!
+    while ((*first) && (*second) && ((*first) == (*second))) //acutally the (*second) check can be missed here.
+    {
+        first++;
+        second++;
+    }
+
+    return (*first - *second);
+
 }
 
 void loadUsers(const char* source)
@@ -216,16 +234,95 @@ void addUser(const char* name, const char* password)
     file.clear();
     file.close();
 }
+
+bool isValidUser(char* username, char* password)
+{
+    for (unsigned i = 0; i < usersLength; i+=2)
+    {
+        if ((myStrcmp(username, users[i]) == 0)&&
+            (myStrcmp(password, users[i+1]) == 0))
+        {
+            return true;
+
+        }
+    }
+    return false;
+}
+
+bool isUsernameTaken(char* username)
+{
+    for (unsigned i = 0; i < usersLength; i += 2)
+    {
+        if ((myStrcmp(username, users[i]) == 0))
+            return true;
+    }
+    return false;
+}
+
+void authenticateUser()
+{
+    char option;
+    std::cout << "Do you want to login or register: Press l/r" << std::endl;
+    std::cin >> option;
+
+    while (option != 'l' && option != 'r')
+    {
+        std::cout << "Invalid input, try again."<<std::endl;
+        std::cin >> option;
+    }
+
+    if (option == 'l') {
+
+        std::cout << "username: ";
+        std::cin.ignore();
+        std::cin.getline(username, MAX_LEN);
+        std::cout << "password: ";
+        std::cin.getline(password, MAX_LEN);
+
+        while (!isValidUser(username, password)) {
+            
+            std::cout << "Invalid username or password, try again." << std::endl;
+            std::cout << "username: ";
+            std::cin.getline(username, MAX_LEN);
+            std::cout << "password: ";
+            std::cin.getline(password, MAX_LEN);
+        }
+        std::cout << "User logged in successfully" << std::endl;
+
+    }
+    else {
+            std::cout << "username: ";
+            std::cin.ignore();
+            std::cin.getline(username, MAX_LEN);
+            std::cout << "password: ";
+            std::cin.getline(password, MAX_LEN);
+
+            while (isUsernameTaken(username))
+            {
+                std::cout << "Username is taken, try again." << std::endl;
+                std::cout << "username: ";
+                std::cin.getline(username, MAX_LEN);
+                std::cout << "password: ";
+                std::cin.getline(password, MAX_LEN);
+            }
+            addUser(username, password);
+            std::cout << "User registered successfully" << std::endl;
+        }
+}
+
 int main()
 {
     loadUsers("Users.txt");
     loadLevels("levels.txt");
+    
+    authenticateUser();
+    
 
     /*for (unsigned i = 0; i < usersLength; i++)
         std::cout << users[i] << std::endl; */
 
-        addUser("Georgi Ivanov", "2401");
-        loadUsers("Users.txt");
+        /*addUser("Georgi Ivanov", "2401");
+        loadUsers("Users.txt");*/
         /*for (unsigned i = 0; i < numberOfLevels; i++)
         {
         unsigned index = 0;
