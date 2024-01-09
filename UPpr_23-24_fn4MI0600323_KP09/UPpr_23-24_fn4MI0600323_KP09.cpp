@@ -1,9 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <iomanip>
 
-constexpr unsigned MAX_LEN = 64;//maximum number of chars on one line in the file
-unsigned usersLength, numberOfLevels;
+constexpr unsigned MAX_LEN = 64, MAX_LEVEL_SIZE = 30;//maximum number of chars on one line in the file
+unsigned usersSize, numberOfLevels;
 char** users;
 char*** levels;
 char username[MAX_LEN] = "", password[MAX_LEN] = "";
@@ -109,6 +110,17 @@ int myStrcmp(const char* first, const char* second)
 
 }
 
+void inputInRange(unsigned& num, unsigned left, unsigned right)
+{
+    std::cin >> num;
+
+    while (num < left || num>right)
+    {
+        std::cout << "Invalid input, try again!" << std::endl;
+        std::cin >> num;
+    }
+}
+
 void loadUsers(const char* source)
 {
     if (!source)
@@ -127,8 +139,8 @@ void loadUsers(const char* source)
     char temp[MAX_LEN] = "";
     sourceFile.getline(temp, MAX_LEN);
 
-    usersLength = 2 * myAtoi(temp);
-    users = new char* [usersLength];
+    usersSize = 2 * myAtoi(temp);
+    users = new char* [usersSize];
     unsigned index = 0;
 
     while (sourceFile)
@@ -193,22 +205,28 @@ void loadLevels(const char* source)
 
 }
 
+void deleteArray(char** arr, unsigned rows)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        delete[] arr[i];
+    }
+    delete[] arr;
+}
+
 void deleteMemory()
 {
-    for (unsigned i = 0; i < usersLength; i++)
-        delete[] users[i];
-    
-    delete[] users;
+   
+    deleteArray(users, usersSize);
 
     for (unsigned i = 0; i < numberOfLevels; i++)
     {
         unsigned index = 0;
         while (levels[i][index] != nullptr)
         {
-            delete[] levels[i][index];
             index++;
         }
-        delete[] levels[i];
+        deleteArray(levels[i], index + 1);
     }
     delete[] levels;
 }
@@ -219,13 +237,13 @@ void addUser(const char* name, const char* password)
         return;
 
     char temp[MAX_LEN] = "";
-    toString((usersLength+2) / 2, temp);
+    toString((usersSize+2) / 2, temp);
 
     std::ofstream file("users.txt");
     
     file << temp<<std::endl;
     
-    for (int i = 0; i < usersLength; i++)
+    for (int i = 0; i < usersSize; i++)
         file << users[i]<<std::endl;
 
     file << name << std::endl;
@@ -237,7 +255,7 @@ void addUser(const char* name, const char* password)
 
 bool isValidUser(char* username, char* password)
 {
-    for (unsigned i = 0; i < usersLength; i+=2)
+    for (unsigned i = 0; i < usersSize; i+=2)
     {
         if ((myStrcmp(username, users[i]) == 0)&&
             (myStrcmp(password, users[i+1]) == 0))
@@ -251,7 +269,7 @@ bool isValidUser(char* username, char* password)
 
 bool isUsernameTaken(char* username)
 {
-    for (unsigned i = 0; i < usersLength; i += 2)
+    for (unsigned i = 0; i < usersSize; i += 2)
     {
         if ((myStrcmp(username, users[i]) == 0))
             return true;
@@ -310,30 +328,201 @@ void authenticateUser()
         }
 }
 
+void copyMatrix(char** source, char**& dest, unsigned& levelSize)
+{
+    while (source[levelSize] != nullptr)
+        levelSize++;
+
+    dest = new char* [levelSize+1];
+    dest[levelSize] = nullptr;
+
+    for (int i = 0; i < levelSize; i++)
+    {
+        dest[i] = new char[levelSize + 1]; //for \0
+
+        myStrcpy(source[i], dest[i]);
+    }
+}
+
+void setValue(char** matrix, size_t rows, char value)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < rows; j++)
+        {
+            matrix[i][j] = value;
+        }
+    }
+}
+
+void calculateNumbersLeft(unsigned level, unsigned numbersLeft[][MAX_LEVEL_SIZE], size_t levelSize, unsigned& maxCols)
+{
+
+    for (unsigned i = 0; i < levelSize; i++)
+    {
+        unsigned counter = 0, index = 0;
+        for(int j = 0;j<levelSize;j++)
+        {
+            numbersLeft[i][j] = 0;
+
+            if (levels[level][i][j] == '1')
+            {
+                counter++;
+                if (j == levelSize - 1)
+                {
+                    numbersLeft[i][index] = counter;
+                    index++;
+                    // std::cout << numbersTop[i][index] << std::endl;
+                }
+               // std::cout << counter << std::endl;
+            }
+            else if (counter != 0)
+                {
+                    numbersLeft[i][index] = counter;
+                   //std::cout << numbersTop[i][index] << std::endl;
+                    counter = 0;
+                    index++;
+                }
+        }
+        if (index > maxCols)
+            maxCols = index;
+    }
+}
+
+void calculateNumbersTop(unsigned level, unsigned numbersTop[][MAX_LEVEL_SIZE], size_t levelSize, unsigned& maxRows)
+{
+
+    for (unsigned i = 0; i < levelSize; i++)
+    {
+        unsigned counter = 0, index = 0;
+        for (int j = 0; j < levelSize; j++)
+        {
+            numbersTop[j][i] = 0;
+
+            if (levels[level][j][i] == '1')
+            {
+                counter++;
+                if (j == levelSize - 1)
+                {
+                    numbersTop[index][i] = counter;
+                    index++;
+                    // std::cout << numbersTop[i][index] << std::endl;
+                }
+                // std::cout << counter << std::endl;
+            }
+            else if (counter != 0)
+            {
+                numbersTop[index][i] = counter;
+                //std::cout << numbersTop[i][index] << std::endl;
+                counter = 0;
+                index++;
+            }
+        }
+        if (index > maxRows)
+            maxRows = index;
+    }
+}
+void printMatrix(unsigned matrix[][MAX_LEVEL_SIZE], size_t rows, size_t cols)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            if(matrix[i][j] != 0)
+            std::cout << matrix[i][j] << ' ';
+        }
+        std::cout << std::endl;
+    }
+}
+
+void printMatrix1(unsigned matrix[][MAX_LEVEL_SIZE], size_t rows, size_t cols)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            if (matrix[i][j] != 0)
+                std::cout << matrix[i][j] << ' ';
+            else std::cout << ' ' << ' ';
+        }
+        std::cout << std::endl;
+    }
+}
+
+void printLevel(unsigned level, char** levelMatrix, size_t levelSize, const unsigned numbersTop[][MAX_LEVEL_SIZE], 
+                size_t numbersTopRows, const unsigned numbersLeft[][MAX_LEVEL_SIZE], size_t numbersLeftCols)
+{
+    std::cout <<std::endl<< "Level: " << level << " Press s to save level." <<std::endl;
+
+    //print numbersTop
+    for (int i = 0; i < numbersTopRows; i++)
+    {
+        std::cout << std::endl;
+        std::cout<<std::setw(2 * numbersLeftCols + 1)<<' ';
+        for (int j = 0; j < levelSize; j++)
+        {
+            if (numbersTop[i][j] != 0)
+                std::cout <<numbersTop[i][j]<<"   ";
+            else std::cout << "    ";
+        }
+
+    }
+
+    std::cout << std::endl;
+    //print numbersLeft and level
+
+    for (int i = 0; i < levelSize; i++)
+    {
+        //print numbersLeft
+        for (int j = 0; j < numbersLeftCols; j++)
+        {
+            if (numbersLeft[i][j] != 0)
+                std::cout << numbersLeft[i][j] << ' ';
+            else std::cout << "  ";
+        }
+
+        for (int j = 0; j < levelSize; j++)
+        {
+            std::cout << '(' << levelMatrix[i][j] << ") ";
+        }
+        std::cout << std::endl;
+    }
+    
+}
+
+void play()
+{
+    unsigned level, levelSize = 0;
+    char** levelMatrix = nullptr;
+
+    std::cout << "Select level " << 0 << " - " << numberOfLevels-1<<std::endl;
+    
+    inputInRange(level, 0, numberOfLevels-1);
+
+    copyMatrix(levels[level], levelMatrix, levelSize);//returns levelSize without the nullptr
+    setValue(levelMatrix, levelSize, ' ');
+
+    unsigned numbersTop[MAX_LEVEL_SIZE][MAX_LEVEL_SIZE], numbersLeft[MAX_LEVEL_SIZE][MAX_LEVEL_SIZE],
+             numbersLeftCols = 0, numbersTopRows = 0;
+
+    calculateNumbersLeft(level, numbersLeft, levelSize, numbersLeftCols);
+    calculateNumbersTop(level, numbersTop, levelSize, numbersTopRows);
+    
+    printLevel(level, levelMatrix, levelSize, numbersTop, numbersTopRows, numbersLeft, numbersLeftCols);
+
+}
+
 int main()
 {
     loadUsers("Users.txt");
-    loadLevels("levels.txt");
+    loadLevels("Levels.txt");
     
     authenticateUser();
     
+    play();
+    
 
-    /*for (unsigned i = 0; i < usersLength; i++)
-        std::cout << users[i] << std::endl; */
-
-        /*addUser("Georgi Ivanov", "2401");
-        loadUsers("Users.txt");*/
-        /*for (unsigned i = 0; i < numberOfLevels; i++)
-        {
-        unsigned index = 0;
-        while (levels[i][index] != nullptr)
-        {
-            std::cout << levels[i][index] << std::endl;
-            index++;
-        }
-        std::cout << std::endl;
-            
-         }*/
+    
 
 deleteMemory();
 }
