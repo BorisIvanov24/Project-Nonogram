@@ -3,11 +3,13 @@
 #include <string>
 #include <iomanip>
 
-constexpr unsigned MAX_LEN = 64, MAX_LEVEL_SIZE = 30;//maximum number of chars on one line in the file
-unsigned usersSize, numberOfLevels;
-char** users;
-char*** levels;
+constexpr unsigned MAX_LEN = 100, MAX_LEVEL_SIZE = 30;//maximum number of chars on one line in the file
+unsigned usersSize, numberOfLevels, lives;
+char** users; //keeps all users and their passwords
+char*** levels; //keeps all levels
 char username[MAX_LEN] = "", password[MAX_LEN] = "";
+char EMPTY_SYMBOL = 249, FILL_SYMBOL = 254;
+
 
 char getCharFromDigit(int digit)
 {
@@ -31,8 +33,11 @@ unsigned getNumberLength(unsigned int n)
     return res;
 }
 
-void toString(unsigned int n, char* str)
+void unsignedToString(unsigned int n, char* str)
 {
+    if (!str)
+        return;
+
     unsigned int len = getNumberLength(n);
 
     for (int i = len - 1; i >= 0; i--)
@@ -71,6 +76,7 @@ void myStrcpy(const char* source, char* dest)
 {
     if (!source || !dest)
         return;
+
     while (*source)
     {
         *dest = *source;
@@ -97,10 +103,9 @@ unsigned myStrlen(const char* str)
 int myStrcmp(const char* first, const char* second)
 {
     if (!first || !second)
-        return 0; //some error value
+        return 0; //error
 
-    //we skip the common prefix, but not the terminating zero!
-    while ((*first) && (*second) && ((*first) == (*second))) //acutally the (*second) check can be missed here.
+    while ((*first) && (*second) && ((*first) == (*second))) 
     {
         first++;
         second++;
@@ -205,7 +210,7 @@ void loadLevels(const char* source)
 
 }
 
-void deleteArray(char** arr, unsigned rows)
+void deleteCharMatrix(char** arr, unsigned rows)
 {
     for (int i = 0; i < rows; i++)
     {
@@ -214,10 +219,10 @@ void deleteArray(char** arr, unsigned rows)
     delete[] arr;
 }
 
-void deleteMemory()
+void deleteMemory() //deletes levels and users
 {
    
-    deleteArray(users, usersSize);
+    deleteCharMatrix(users, usersSize);
 
     for (unsigned i = 0; i < numberOfLevels; i++)
     {
@@ -226,18 +231,18 @@ void deleteMemory()
         {
             index++;
         }
-        deleteArray(levels[i], index + 1);
+        deleteCharMatrix(levels[i], index + 1);
     }
     delete[] levels;
 }
 
-void addUser(const char* name, const char* password)
+void addUser(const char* username, const char* password)
 {
-    if (!name || !password)
+    if (!username || !password)
         return;
 
     char temp[MAX_LEN] = "";
-    toString((usersSize+2) / 2, temp);
+    unsignedToString((usersSize+2) / 2, temp);
 
     std::ofstream file("users.txt");
     
@@ -246,15 +251,18 @@ void addUser(const char* name, const char* password)
     for (int i = 0; i < usersSize; i++)
         file << users[i]<<std::endl;
 
-    file << name << std::endl;
+    file << username << std::endl;
     file << password;
 
     file.clear();
     file.close();
 }
 
-bool isValidUser(char* username, char* password)
+bool isValidUser(const char* username, const char* password)
 {
+    if (!username || !password)
+        return;
+
     for (unsigned i = 0; i < usersSize; i+=2)
     {
         if ((myStrcmp(username, users[i]) == 0)&&
@@ -267,8 +275,11 @@ bool isValidUser(char* username, char* password)
     return false;
 }
 
-bool isUsernameTaken(char* username)
+bool isUsernameTaken(const char* username)
 {
+    if (!username)
+        return;
+
     for (unsigned i = 0; i < usersSize; i += 2)
     {
         if ((myStrcmp(username, users[i]) == 0))
@@ -328,17 +339,20 @@ void authenticateUser()
         }
 }
 
-void copyMatrix(char** source, char**& dest, unsigned& levelSize)
+void copyMatrix(char** source, char**& dest, unsigned& size)
 {
-    while (source[levelSize] != nullptr)
-        levelSize++;
+    while (source[size] != nullptr)
+        size++;
 
-    dest = new char* [levelSize+1];
-    dest[levelSize] = nullptr;
+    dest = new char* [size + 1];
+    dest[size] = nullptr;
 
-    for (int i = 0; i < levelSize; i++)
+    for (int i = 0; i < size; i++)
     {
-        dest[i] = new char[levelSize + 1]; //for \0
+        dest[i] = new char[size + 1]; //for \0
+
+        if (!source[i])               //check for nullptr
+            continue;
 
         myStrcpy(source[i], dest[i]);
     }
@@ -348,6 +362,9 @@ void setValue(char** matrix, size_t rows, char value)
 {
     for (int i = 0; i < rows; i++)
     {
+        if (!matrix[i])            //check for nullptr
+            continue;
+
         for (int j = 0; j < rows; j++)
         {
             matrix[i][j] = value;
@@ -421,38 +438,12 @@ void calculateNumbersTop(unsigned level, unsigned numbersTop[][MAX_LEVEL_SIZE], 
         if (index > maxRows)
             maxRows = index;
     }
-}
-void printMatrix(unsigned matrix[][MAX_LEVEL_SIZE], size_t rows, size_t cols)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            if(matrix[i][j] != 0)
-            std::cout << matrix[i][j] << ' ';
-        }
-        std::cout << std::endl;
-    }
-}
-
-void printMatrix1(unsigned matrix[][MAX_LEVEL_SIZE], size_t rows, size_t cols)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            if (matrix[i][j] != 0)
-                std::cout << matrix[i][j] << ' ';
-            else std::cout << ' ' << ' ';
-        }
-        std::cout << std::endl;
-    }
-}
+} 
 
 void printLevel(unsigned level, char** levelMatrix, size_t levelSize, const unsigned numbersTop[][MAX_LEVEL_SIZE], 
                 size_t numbersTopRows, const unsigned numbersLeft[][MAX_LEVEL_SIZE], size_t numbersLeftCols)
 {
-    std::cout <<std::endl<< "Level: " << level << " Press s to save level." <<std::endl;
+    std::cout <<std::endl<< "Level: " << level << " Lives: "<<lives<<" Press s to save level." <<std::endl;
 
     //print numbersTop
     for (int i = 0; i < numbersTopRows; i++)
@@ -490,17 +481,127 @@ void printLevel(unsigned level, char** levelMatrix, size_t levelSize, const unsi
     
 }
 
+bool isWinner(char** levelMatrix, size_t levelSize, unsigned level)
+{
+    for (int i = 0; i < levelSize; i++)
+    {
+        for (int j = 0; j < levelSize; j++)
+        {
+            if (levels[level][i][j] == '1' && levelMatrix[i][j] != FILL_SYMBOL)
+                return false;
+        }
+    }
+    return true;
+}
+
+void fillEmpty(char** levelMatrix, size_t levelSize, unsigned level)
+{
+    for (int i = 0; i < levelSize; i++)
+    {
+        bool match = true;
+        for (int j = 0; j < levelSize; j++)
+        {
+            if (levels[level][i][j] == '1' && levelMatrix[i][j] != FILL_SYMBOL)
+            {
+                match = false;
+                break;
+            }
+        }
+
+        if (match)
+        {
+            for (int j = 0; j < levelSize; j++)
+            {
+                if (levels[level][i][j] == '0')
+                    levelMatrix[i][j] = EMPTY_SYMBOL;
+            }
+        }
+    }
+
+    for (int i = 0; i < levelSize; i++)
+    {
+        bool match = true;
+        for (int j = 0; j < levelSize; j++)
+        {
+            if (levels[level][j][i] == '1' && levelMatrix[j][i] != FILL_SYMBOL)
+            {
+                match = false;
+                break;
+            }
+        }
+
+        if (match)
+        {
+            for (int j = 0; j < levelSize; j++)
+            {
+                if (levels[level][j][i] == '0')
+                    levelMatrix[j][i] = EMPTY_SYMBOL;
+            }
+        }
+    }
+
+}
+
+void inputCommand(char** levelMatrix, size_t levelSize, unsigned level)
+{
+    char ch = ' ';
+    unsigned row = 0, col = 0;
+    std::cout << "\nf row col: fills block\ne row col: places empty symbol" << std::endl;
+    
+    std::cin >> ch>>row>>col;
+    while ((ch != 'f' && ch != 'e') || row > levelSize - 1 || col > levelSize - 1 ||
+            levelMatrix[row][col] == EMPTY_SYMBOL || levelMatrix[row][col] == FILL_SYMBOL)
+    {
+        if (levelMatrix[row][col] == EMPTY_SYMBOL || levelMatrix[row][col] == FILL_SYMBOL)
+        {
+            std::cout << "You already filled this cell, try again" << std::endl;
+        }
+        else {
+            std::cout << "Invalid command, try again!" << std::endl;
+        }
+        
+        std::cin >>ch>>row>>col;
+
+    }
+    
+    if (ch == 'f')
+    {
+        if (levels[level][row][col] != '1')
+            {
+                std::cout << "\nWrong!" <<std::endl;
+                lives--;
+            }
+        else {
+            std::cout << "\nCorrect!"<<std::endl;
+            levelMatrix[row][col] = FILL_SYMBOL;
+        }
+    }
+    else
+    {
+        if (levels[level][row][col] != '0')
+        {
+            std::cout << "Wrong!" << std::endl<<std::endl;
+            lives--;
+        }
+        else {
+            std::cout << "Correct!"<<std::endl<<std::endl;
+            levelMatrix[row][col] = EMPTY_SYMBOL;
+        }
+    }
+}
+
 void play()
 {
     unsigned level, levelSize = 0;
     char** levelMatrix = nullptr;
 
-    std::cout << "Select level " << 0 << " - " << numberOfLevels-1<<std::endl;
+    std::cout << "\nSelect level " << 0 << " - " << numberOfLevels-1<<std::endl;
     
     inputInRange(level, 0, numberOfLevels-1);
 
     copyMatrix(levels[level], levelMatrix, levelSize);//returns levelSize without the nullptr
     setValue(levelMatrix, levelSize, ' ');
+    lives = levelSize / 2;
 
     unsigned numbersTop[MAX_LEVEL_SIZE][MAX_LEVEL_SIZE], numbersLeft[MAX_LEVEL_SIZE][MAX_LEVEL_SIZE],
              numbersLeftCols = 0, numbersTopRows = 0;
@@ -508,8 +609,25 @@ void play()
     calculateNumbersLeft(level, numbersLeft, levelSize, numbersLeftCols);
     calculateNumbersTop(level, numbersTop, levelSize, numbersTopRows);
     
+    while (!isWinner(levelMatrix, levelSize, level))
+    {
+        printLevel(level, levelMatrix, levelSize, numbersTop, numbersTopRows, numbersLeft, numbersLeftCols);
+        inputCommand(levelMatrix, levelSize, level);
+        
+        if (lives == 0)
+        {
+            std::cout << "\nYou Lost! :(\n";
+            break;
+        }
+
+        fillEmpty(levelMatrix, levelSize, level);
+
+    }
     printLevel(level, levelMatrix, levelSize, numbersTop, numbersTopRows, numbersLeft, numbersLeftCols);
 
+
+    if(lives!=0)
+    std::cout << "Congratulations you won!\n";
 }
 
 int main()
@@ -519,10 +637,10 @@ int main()
     
     authenticateUser();
     
-    play();
-    
-
-    
+    while (1)
+    {
+        play();
+    }
 
 deleteMemory();
 }
