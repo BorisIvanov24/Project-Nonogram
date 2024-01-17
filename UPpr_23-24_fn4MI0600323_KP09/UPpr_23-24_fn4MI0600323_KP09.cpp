@@ -14,11 +14,11 @@ char getCharFromDigit(int digit)
     return digit + '0';
 }
 
-unsigned getNumberLength(unsigned int n)
+unsigned getNumberLength(unsigned n)
 {
     if (n == 0)
         return 1;
-    unsigned int res = 0;
+    unsigned res = 0;
 
     while (n != 0)
     {
@@ -28,12 +28,12 @@ unsigned getNumberLength(unsigned int n)
     return res;
 }
 
-void unsignedToString(unsigned int n, char* str)
+void unsignedToString(unsigned n, char* str)
 {
     if (!str)
         return;
 
-    unsigned int len = getNumberLength(n);
+    unsigned len = getNumberLength(n);
 
     for (int i = len - 1; i >= 0; i--)
     {
@@ -47,6 +47,7 @@ int convertCharToDigit(char ch)
 {
     if (ch >= '0' && ch <= '9')
         return ch - '0';
+
     return -1;
 }
 
@@ -64,7 +65,8 @@ unsigned myAtoi(const char* str)
         int digit = convertCharToDigit(*str);
         if (digit == -1)
             return 0;
-        (result *= 10) += digit;
+
+        result = result*10 + digit;
         str++;
     }
     return result;
@@ -113,8 +115,8 @@ int myStrcmp(const char* first, const char* second)
     if (!first || !second)
         return 0; //error
 
-    if ((*first == '\0' && *second == '\0'))
-        return 0;
+   /* if ((*first == '\0' && *second == '\0'))
+        return 0;*/
 
     while ((*first) && (*second) && ((*first) == (*second))) 
     {
@@ -263,17 +265,17 @@ bool isUsernameTaken(char** users, size_t usersSize, const char* username)
 
 void authenticateUser(char** users, size_t usersSize, char* username, char* password)
 {
-    char option;
+    char option[MAX_LEN] = "";
     std::cout << "Do you want to login or register: Press l/r" << std::endl;
     std::cin >> option;
 
-    while (option != 'l' && option != 'r')
+    while (myStrcmp(option, "l")!=0 && myStrcmp(option, "r") != 0)
     {
         std::cout << "Invalid input, try again."<<std::endl;
         std::cin >> option;
     }
 
-    if (option == 'l') {
+    if (myStrcmp(option, "l") == 0) {
 
         std::cout << "username: ";
         std::cin.ignore();
@@ -614,18 +616,18 @@ void loadLevelFromFile(unsigned level, char levelMatrixPattern[][MAX_LEVEL_SIZE]
 void getLevelInformation(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPattern[][MAX_LEVEL_SIZE], 
                          unsigned& level, unsigned& lives, char* username)
 {
-    char ch = ' ';
+    char ch[MAX_LEN] = "";
     std::cout << "If you want to play new game, press n" << std::endl;
     std::cout << "If you want to load game, press l" << std::endl;
     std::cin >> ch;
 
-    while (ch != 'n' && ch != 'l')
+    while (myStrcmp(ch, "n") != 0 && myStrcmp(ch, "l") != 0)
     {
         std::cout << "Invalid command, try again" << std::endl;
         std::cin >> ch;
     }
 
-    switch (ch)
+    switch (ch[0])
     {
         case'l':
         {
@@ -659,7 +661,7 @@ void getLevelInformation(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPat
 void getInputFromUser(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPattern[][MAX_LEVEL_SIZE],
                       size_t levelSize, unsigned& lives, unsigned level, char* username)
 {
-    char ch = ' ';
+    char ch[MAX_LEN] = "";
     unsigned row = 0, col = 0;
     char rowStr[MAX_LEN] = "", colStr[MAX_LEN] = "";
 
@@ -668,9 +670,9 @@ void getInputFromUser(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPatter
     std::cout << "If you want to save level, press s" << std::endl;
 
     std::cin >> ch;
-    while (ch != 'f' && ch != 'e')
+    while (myStrcmp(ch, "f") != 0 && myStrcmp(ch, "e") != 0)
     {
-        if (ch != 's')
+        if (myStrcmp(ch, "s") != 0)
         {
             std::cout << "Invalid command, try again!" << std::endl;
             std::cin >> ch;
@@ -682,7 +684,7 @@ void getInputFromUser(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPatter
              }
     }
 
-    switch (ch)
+    switch (ch[0])
     {
         case 'f':
         case 'e':
@@ -707,7 +709,7 @@ void getInputFromUser(char levelMatrix[][MAX_LEVEL_SIZE], char levelMatrixPatter
                 col = myAtoi(colStr);
             }
 
-            if (ch == 'f')
+            if (myStrcmp(ch, "f") == 0)
             {
                 if (levelMatrixPattern[row-1][col-1] != '1')
                 {
@@ -769,21 +771,21 @@ bool askUserContinueToPlayOrLeave(unsigned lives)
     if(lives)
     std::cout << "If you want to continue to next level, press n" << std::endl;
     else
-    std::cout << "If you want to try again, press t" << std::endl;
+    std::cout << "If you want to try again, press n" << std::endl;
     
     std::cout << "If you want to leave app, press l" << std::endl;
 
-    char ch = ' ';
+    char ch[MAX_LEN] = "";
 
     std::cin >> ch;
 
-    while (ch != 'n' && ch != 'l' && ch!='t')
+    while (myStrcmp(ch, "n") != 0 && myStrcmp(ch, "l") != 0)
     {
         std::cout << "Invalid command, try again" << std::endl;
         std::cin >> ch;
     }
 
-    if (ch == 'l')
+    if (myStrcmp(ch, "l") == 0)
         return false;
 
     return true;
@@ -824,6 +826,7 @@ int main()
         else
         {
             lives = levelSize / 2;
+            setValue(levelMatrix, levelSize, ' ');
         }
     }
 }
