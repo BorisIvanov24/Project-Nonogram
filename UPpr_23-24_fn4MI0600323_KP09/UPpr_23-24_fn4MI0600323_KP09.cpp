@@ -234,7 +234,7 @@ void loadMatrixFromFile(char matrix[][MAX_LEVEL_SIZE], size_t rows, const char* 
 }
 
 //Adds new user to the file with the users
-void addUser(const char** users, size_t usersSize, const char* username, const char* password)
+void addUser(char** users, size_t usersSize, const char* username, const char* password)
 {
     if (!username || !password)
         return;
@@ -261,7 +261,7 @@ void addUser(const char** users, size_t usersSize, const char* username, const c
 }
 
 //checks if the password for this user is correct
-bool isValidUser(const char** users, size_t usersSize, const char* username, const char* password)
+bool isValidUser(char** users, size_t usersSize, const char* username, const char* password)
 {
     if (!username || !password||myStrcmp(username, "") == 0|| myStrcmp(username, "") == 0)
         return false;
@@ -278,7 +278,7 @@ bool isValidUser(const char** users, size_t usersSize, const char* username, con
 }
 
 //searches if a user already exists in the users matrix
-bool isUsernameTaken(const char** users, size_t usersSize, const char* username)
+bool isUsernameTaken(char** users, size_t usersSize, const char* username)
 {
     if (!username)
         return false;
@@ -291,7 +291,7 @@ bool isUsernameTaken(const char** users, size_t usersSize, const char* username)
     return false;
 }
 
-void authenticateUser(const char** users, size_t usersSize, char* username, char* password)
+void authenticateUser(char** users, size_t usersSize, char* username, char* password)
 {
     char option[MAX_LEN] = "";
     std::cout << "Do you want to login or register: Press l/r" << std::endl;
